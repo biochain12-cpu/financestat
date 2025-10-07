@@ -79,9 +79,9 @@ export default function MainPage() {
   const mainCurrencies = currencies.filter(c => mainCodes.includes(c.code)).sort((a, b) => a.code.localeCompare(b.code));
   const otherCurrencies = currencies.filter(c => !mainCodes.includes(c.code)).sort((a, b) => a.code.localeCompare(b.code));
 
-  const filteredTransactions = transactions.filter(tx =>
-    !showOnlyCurrentShift || tx.shift === currentShift
-  );
+  const filteredTransactions = (Array.isArray(transactions) ? transactions : []).filter(tx =>
+  !showOnlyCurrentShift || tx.shift === currentShift
+);
 
   const calcRubDelta = (tx: any) => {
     if (tx.type !== "exchange") return 0;
