@@ -8,5 +8,4 @@ psycopg2-binary
 requests
 alembic
 python-multipart
-bcrypt
-# force rebuild
+bcrypt>=4.0.1
