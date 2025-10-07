@@ -1,7 +1,7 @@
 import axios from "axios";
 import { toast } from "react-toastify";
 
-const API_URL = "http://127.0.0.1:8000";
+const API_URL = process.env.REACT_APP_API_URL;
 
 export const api = axios.create({
   baseURL: API_URL,
@@ -29,4 +29,3 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
-
