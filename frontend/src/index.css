@@ -1,0 +1,33 @@
+body {
+  margin: 0;
+  padding: 0;
+  background: #f7fafd;
+  color: #222;
+  font-family: 'Segoe UI', 'Roboto', Arial, sans-serif;
+}
+
+a {
+  color: #3b82f6;
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+th, td {
+  padding: 8px 10px;
+  border-bottom: 1px solid #e0e6ef;
+  text-align: left;
+}
+
+th {
+  background: #f3f6fa;
+  color: #3b82f6;
+  font-weight: 700;
+}
