@@ -32,7 +32,6 @@ class TransactionOut(TransactionBase):
     id: int
     author_id: int
     date: datetime.datetime
-    # Добавим автора как объект (если нужно)
     author: Optional[UserOut] = None
 
     class Config:
@@ -56,6 +55,7 @@ class FireMessageOut(FireMessageBase):
 # Для истории смен (ShiftSnapshot)
 class ShiftSnapshotBase(BaseModel):
     shift_number: int
+    cycle: int
     balances: Dict[str, Any]
     rates: Dict[str, Any]
 

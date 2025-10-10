@@ -40,6 +40,10 @@ export default function MainPage() {
     const saved = localStorage.getItem("currentShift");
     return saved ? Number(saved) : 1;
   });
+  const [cycle, setCycle] = useState(() => {
+    const saved = localStorage.getItem("cycle");
+    return saved ? Number(saved) : 1;
+  });
   const [confirmShift, setConfirmShift] = useState(false);
   const [firePage, setFirePage] = useState(1);
   const firePerPage = 5;
@@ -85,6 +89,7 @@ export default function MainPage() {
     try {
       await saveShiftSnapshot({
         shift_number: currentShift,
+        cycle,
         balances,
         rates,
       });
@@ -95,7 +100,13 @@ export default function MainPage() {
     exportShiftReport({ transactions, shift: currentShift, rates });
     setConfirmShift(false);
     setCongratsOpen(true);
-    const nextShift = currentShift === 3 ? 1 : currentShift + 1;
+    let nextShift = currentShift === 3 ? 1 : currentShift + 1;
+    let nextCycle = cycle;
+    if (currentShift === 3) {
+      nextCycle = cycle + 1;
+      setCycle(nextCycle);
+      localStorage.setItem("cycle", String(nextCycle));
+    }
     setCurrentShift(nextShift);
     localStorage.setItem("currentShift", String(nextShift));
     toast.success("Смена завершена!");
@@ -152,9 +163,18 @@ export default function MainPage() {
     const fromRub = (rates[tx.from_currency]?.RUB || 0) * (tx.from_amount || 0);
     return toRub - fromRub;
   };
-  const profit = filteredTransactions
+
+  const profitOnlyExchange = filteredTransactions
     .filter(tx => tx.type === "exchange")
-    .reduce((sum, tx) => sum + calcRubDelta(tx), 0);
+    .reduce((sum, tx) => {
+      const toRub = (rates[tx.to_currency]?.RUB || 0) * (tx.to_amount || 0);
+      const fromRub = (rates[tx.from_currency]?.RUB || 0) * (tx.from_amount || 0);
+      return sum + (toRub - fromRub);
+    }, 0);
+
+  const exchangeWithIdCount = filteredTransactions
+    .filter(tx => tx.type === "exchange" && (tx.comment || "").trim().toLowerCase().startsWith("id"))
+    .length;
 
   const handleDelete = async (id: number) => {
     try {
@@ -315,39 +335,33 @@ export default function MainPage() {
               .map((cur, i) => (
                 <Box key={cur.code + i} sx={{
                   display: "flex",
+                  flexDirection: "column",
                   alignItems: "center",
-                  gap: 1,
-                  minWidth: 90,
-                  maxWidth: 180,
-                  p: "4px 10px",
-                  borderRadius: "50px",
-                  background: "#f3f6fa",
+                  p: "8px 2px",
+                  borderRadius: "10px",
+                  background: "#f8fafc",
                   fontWeight: 600,
                   fontSize: "1em",
-                  border: "1.5px solid #e0e6ef",
-                  justifyContent: "center",
-                  cursor: "pointer",
-                  backgroundColor: selectedCurrencies.includes(cur.code) ? "#dbeafe" : "#f3f6fa"
-                }}
-                  onClick={() => {
-                    setSelectedCurrencies(selectedCurrencies.includes(cur.code)
-                      ? selectedCurrencies.filter(c => c !== cur.code)
-                      : [...selectedCurrencies, cur.code]);
-                  }}
-                >
-                  {cur.icon}
-                  <span>{cur.code}</span>
-                  <span style={{ marginLeft: 4, fontWeight: 400 }}>
-                    {balances[cur.code] !== undefined ? balances[cur.code] : 0}
+                  border: "1px solid #e0e6ef",
+                  minWidth: 90,
+                  maxWidth: 120,
+                  boxSizing: "border-box",
+                }}>
+                  <span style={{ fontSize: 16, marginBottom: 2 }}>{getCurrencyIcon(cur.code)}</span>
+                  <span style={{ fontSize: 13, color: "#888", marginBottom: 4 }}>{cur.code}</span>
+                  <span style={{ fontWeight: 700, fontSize: 15 }}>
+                    {typeof balances[cur.code] === "number"
+                      ? balances[cur.code].toLocaleString("ru-RU", {
+                          minimumFractionDigits: cur.code === "BTC" || cur.code === "ETH" ? 6 : 2,
+                          maximumFractionDigits: cur.code === "BTC" || cur.code === "ETH" ? 8 : 2,
+                        })
+                      : 0}
                   </span>
                 </Box>
               ))}
-            <Button sx={{ ml: 2 }} variant="outlined" onClick={() => setSelectedCurrencies([])}>
-              Show all
-            </Button>
           </Box>
         </Paper>
-        {/* Курсы валют */}
+         {/* Курсы валют */}
         <Paper className="rates-block" sx={{
           background: "#fff", borderRadius: "14px", p: 2, mb: 2, boxShadow: "0 2px 16px #e0e6ef80", border: "1.5px solid #e0e6ef"
         }}>
@@ -455,6 +469,11 @@ export default function MainPage() {
             size="small"
             sx={{ width: 200 }}
           />
+          <Box sx={{ ml: "auto", minWidth: 200, textAlign: "right" }}>
+            <Typography fontWeight={700} color={profitOnlyExchange > 0 ? "green" : profitOnlyExchange < 0 ? "red" : "inherit"}>
+              Прибыль: {profitOnlyExchange > 0 ? "+" : ""}{profitOnlyExchange.toFixed(2).replace(".", ",")} RUB (заявки: {exchangeWithIdCount})
+            </Typography>
+          </Box>
         </Box>
 
         {/* История операций */}

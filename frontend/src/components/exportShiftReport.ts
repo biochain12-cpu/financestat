@@ -45,7 +45,7 @@ export function exportShiftReport({
         const cur = e.from_currency || e.to_currency || "";
         const rub = (rates[cur]?.RUB || 0) * val;
         const sign = e.type === "expense" ? "-" : "+";
-        return `  ${sign} ${cur} ${val.toFixed(2).replace(".", ",")} (${rub.toFixed(2).replace(".", ",")} RUB) — ${e.comment || ""}`;
+        return `  ${sign} ${cur} ${val.toFixed(2).replace(".", ",")} (${rub.toFixed(2).replace(".", ",")} RUB)`;
       })
       .join("\n");
   } else {
@@ -60,13 +60,11 @@ export function exportShiftReport({
   a.click();
 
   // --- Скачка CSV с курсами ---
-  // Включаем все основные фиатные и всю крипту, которые есть в rates
   const lines = [];
-  lines.push("Валюта;Курс к RUB");
-  Object.entries(rates).forEach(([cur, val]) => {
+  lines.push("Валюта;Курс");
+  Object.entries(rates).forEach(([cur, val]: any) => {
     if (val && typeof val.RUB === "number") {
-      // Заменяем точку на запятую
-      lines.push(`${cur};${val.RUB.toFixed(6).replace(".", ",")}`);
+      lines.push(`${cur};${String(val.RUB).replace(".", ",")}`);
     }
   });
   const blob2 = new Blob([lines.join("\n")], { type: "text/csv" });

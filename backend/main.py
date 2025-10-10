@@ -231,6 +231,7 @@ def get_rates():
 def create_shift_snapshot(snapshot: schemas.ShiftSnapshotCreate, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
     db_snapshot = models.ShiftSnapshot(
         shift_number=snapshot.shift_number,
+        cycle=snapshot.cycle,
         user_id=current_user.id,
         balances=snapshot.balances,
         rates=snapshot.rates

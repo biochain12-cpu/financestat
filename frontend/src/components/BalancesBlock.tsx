@@ -6,47 +6,56 @@ type Balance = {
   [currency: string]: number;
 };
 
-type Rates = {
-  [currency: string]: { RUB: number };
-};
-
 type Props = {
   balances: Balance;
-  rates?: Rates; // Передавай сюда актуальные курсы, если хочешь показывать RUB-эквивалент
 };
 
-export default function BalancesBlock({ balances, rates }: Props) {
+const getCurrencyIcon = (code: string) => currencies.find(c => c.code === code)?.icon || null;
+
+export default function BalancesBlock({ balances }: Props) {
   return (
     <Paper sx={{ p: 2, mb: 2 }}>
-      <Typography variant="h6">Балансы по валютам</Typography>
-      <Box display="flex" flexWrap="wrap" gap={2} mt={1}>
+      <Typography variant="h6" mb={2}>Балансы по валютам</Typography>
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(90px, 1fr))",
+          gap: 1.5,
+          alignItems: "center",
+          width: "100%",
+          maxWidth: "100%",
+        }}
+      >
         {currencies.map((cur, i) => {
           const value = balances[cur.code] ?? 0;
-          // RUB-эквивалент (если есть rates)
-          let rubValue = "";
-          if (rates && rates[cur.code]?.RUB !== undefined) {
-            rubValue = (value * rates[cur.code].RUB).toLocaleString("ru-RU", {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            });
-          }
           return (
-            <Box key={cur.code + i} sx={{ minWidth: 120, display: "flex", alignItems: "center", gap: 1 }}>
-              {cur.icon}
-              <Typography fontWeight={600}>{cur.code}:</Typography>
-              <Typography>
+            <Box
+              key={cur.code + i}
+              sx={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                p: "8px 2px",
+                borderRadius: "10px",
+                background: "#f8fafc",
+                fontWeight: 600,
+                fontSize: "1em",
+                border: "1px solid #e0e6ef",
+                minWidth: 80,
+                maxWidth: 120,
+                boxSizing: "border-box",
+              }}
+            >
+              <span style={{ fontSize: 16, marginBottom: 2 }}>{getCurrencyIcon(cur.code)}</span>
+              <span style={{ fontSize: 13, color: "#888", marginBottom: 6 }}>{cur.code}</span>
+              <span style={{ fontWeight: 700, fontSize: 15 }}>
                 {typeof value === "number"
                   ? value.toLocaleString("ru-RU", {
                       minimumFractionDigits: cur.code === "BTC" || cur.code === "ETH" ? 6 : 2,
                       maximumFractionDigits: cur.code === "BTC" || cur.code === "ETH" ? 8 : 2,
                     })
                   : 0}
-              </Typography>
-              {rates && cur.code !== "RUB" && (
-                <Typography sx={{ color: "#888", fontSize: "0.95em", ml: 1 }}>
-                  ≈ {rubValue} RUB
-                </Typography>
-              )}
+              </span>
             </Box>
           );
         })}
@@ -54,3 +63,4 @@ export default function BalancesBlock({ balances, rates }: Props) {
     </Paper>
   );
 }
+

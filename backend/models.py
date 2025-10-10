@@ -37,7 +37,9 @@ class ShiftSnapshot(Base):
     __tablename__ = "shift_snapshots"
     id = Column(Integer, primary_key=True, index=True)
     shift_number = Column(Integer, nullable=False)
+    cycle = Column(Integer, nullable=False)  # Уникальный цикл смены
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     datetime = Column(DateTime, default=datetime.datetime.utcnow)
     balances = Column(JSON, nullable=False)
     rates = Column(JSON, nullable=False)
+    user = relationship("User")

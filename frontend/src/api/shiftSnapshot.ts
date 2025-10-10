@@ -2,6 +2,7 @@ import { api } from "./backend";
 
 export async function saveShiftSnapshot(data: {
   shift_number: number;
+  cycle: number;
   balances: any;
   rates: any;
 }) {
