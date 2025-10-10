@@ -8,4 +8,4 @@ psycopg2-binary
 requests
 alembic
 python-multipart
-bcrypt>=4.0.1
+bcrypt==4.1.2
