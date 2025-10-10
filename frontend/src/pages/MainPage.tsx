@@ -116,6 +116,10 @@ export default function MainPage() {
   const mainCurrencies = safeCurrencies.filter(c => mainCodes.includes(c.code)).sort((a, b) => a.code.localeCompare(b.code));
   const otherCurrencies = safeCurrencies.filter(c => !mainCodes.includes(c.code)).sort((a, b) => a.code.localeCompare(b.code));
 
+  const displayedCurrencies = selectedCurrencies.length
+    ? safeCurrencies.filter(cur => selectedCurrencies.includes(cur.code))
+    : safeCurrencies;
+
   const filteredByCurrency = selectedCurrencies.length
     ? transactions.filter(tx =>
         selectedCurrencies.includes(tx.from_currency) ||
@@ -213,7 +217,7 @@ export default function MainPage() {
       localStorage.setItem("token", user.token);
     }
   }, [user]);
-  return (
+    return (
     <Box sx={{
       minHeight: "100vh",
       width: "100vw",
@@ -323,45 +327,76 @@ export default function MainPage() {
           <Typography variant="h6" sx={{ mb: 1 }}>Балансы</Typography>
           <Box sx={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
-            gap: 1,
+            gridTemplateColumns: "repeat(auto-fit, minmax(60px, 1fr))",
+            gap: 0.5,
             alignItems: "center",
             width: "100%",
             maxWidth: "100%",
-            overflowX: "auto"
           }}>
-            {safeCurrencies
+            {displayedCurrencies
               .sort((a, b) => a.code.localeCompare(b.code))
-              .map((cur, i) => (
-                <Box key={cur.code + i} sx={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  p: "8px 2px",
-                  borderRadius: "10px",
-                  background: "#f8fafc",
-                  fontWeight: 600,
-                  fontSize: "1em",
+              .map((cur, i) => {
+                const value = balances[cur.code] ?? 0;
+                return (
+                  <Box
+                    key={cur.code + i}
+                    sx={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      p: "2px 1px",
+                      borderRadius: "8px",
+                      background: "#f8fafc",
+                      fontWeight: 500,
+                      fontSize: "0.8em",
+                      border: "1px solid #e0e6ef",
+                      minWidth: 45,
+                      maxWidth: 60,
+                      boxSizing: "border-box",
+                      cursor: "pointer",
+                      backgroundColor: selectedCurrencies.includes(cur.code) ? "#dbeafe" : "#f8fafc"
+                    }}
+                    onClick={() => {
+                      setSelectedCurrencies(
+                        selectedCurrencies.includes(cur.code)
+                          ? selectedCurrencies.filter(c => c !== cur.code)
+                          : [...selectedCurrencies, cur.code]
+                      );
+                    }}
+                  >
+                    <span style={{ fontSize: 8, marginBottom: 1 }}>{getCurrencyIcon(cur.code)}</span>
+                    <span style={{ fontSize: 9, color: "#888", marginBottom: 2 }}>{cur.code}</span>
+                    <span style={{ fontWeight: 500, fontSize: 10 }}>
+                      {typeof value === "number"
+                        ? value.toLocaleString("ru-RU", {
+                            minimumFractionDigits: cur.code === "BTC" || cur.code === "ETH" ? 6 : 2,
+                            maximumFractionDigits: cur.code === "BTC" || cur.code === "ETH" ? 8 : 2,
+                          })
+                        : 0}
+                    </span>
+                  </Box>
+                );
+              })}
+            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <button
+                style={{
+                  marginLeft: 4,
+                  fontSize: 9,
+                  height: 22,
+                  padding: "0 8px",
+                  borderRadius: 6,
                   border: "1px solid #e0e6ef",
-                  minWidth: 90,
-                  maxWidth: 120,
-                  boxSizing: "border-box",
-                }}>
-                  <span style={{ fontSize: 16, marginBottom: 2 }}>{getCurrencyIcon(cur.code)}</span>
-                  <span style={{ fontSize: 13, color: "#888", marginBottom: 4 }}>{cur.code}</span>
-                  <span style={{ fontWeight: 700, fontSize: 15 }}>
-                    {typeof balances[cur.code] === "number"
-                      ? balances[cur.code].toLocaleString("ru-RU", {
-                          minimumFractionDigits: cur.code === "BTC" || cur.code === "ETH" ? 6 : 2,
-                          maximumFractionDigits: cur.code === "BTC" || cur.code === "ETH" ? 8 : 2,
-                        })
-                      : 0}
-                  </span>
-                </Box>
-              ))}
+                  background: "#fff",
+                  cursor: "pointer"
+                }}
+                onClick={() => setSelectedCurrencies([])}
+              >
+                Show all
+              </button>
+            </Box>
           </Box>
         </Paper>
-         {/* Курсы валют */}
+{/* Курсы валют */}
         <Paper className="rates-block" sx={{
           background: "#fff", borderRadius: "14px", p: 2, mb: 2, boxShadow: "0 2px 16px #e0e6ef80", border: "1.5px solid #e0e6ef"
         }}>
@@ -371,7 +406,7 @@ export default function MainPage() {
           }}>
             {mainCurrencies.map((cur, i) => (
               <Box key={cur.code + i} className="currency-cell" sx={{
-                display: "flex", alignItems: "center", gap: 1, minWidth: 90, p: "6px 12px", borderRadius: "50px",
+                display: "flex", alignItems: "center", gap: 1, minWidth: 60, p: "6px 12px", borderRadius: "50px",
                 background: "#f3f6fa", fontWeight: 600, fontSize: "1em", border: "1.5px solid #e0e6ef", m: "0 6px 0 0"
               }}>
                 {cur.icon}
@@ -394,7 +429,7 @@ export default function MainPage() {
               <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
                 {otherCurrencies.map((cur, i) => (
                   <Box key={cur.code + i} className="currency-cell" sx={{
-                    display: "flex", alignItems: "center", gap: 1, minWidth: 90, p: "6px 12px", borderRadius: "50px",
+                    display: "flex", alignItems: "center", gap: 1, minWidth: 60, p: "6px 12px", borderRadius: "50px",
                     background: "#f3f6fa", fontWeight: 600, fontSize: "1em", border: "1.5px solid #e0e6ef", m: "0 6px 0 0"
                   }}>
                     {cur.icon}

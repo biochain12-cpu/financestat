@@ -57,7 +57,9 @@ export function exportShiftReport({
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
   a.download = `shift_${shift}_report.txt`;
+  document.body.appendChild(a);
   a.click();
+  document.body.removeChild(a);
 
   // --- Скачка CSV с курсами ---
   const lines = [];
@@ -71,5 +73,9 @@ export function exportShiftReport({
   const a2 = document.createElement("a");
   a2.href = URL.createObjectURL(blob2);
   a2.download = `shift_${shift}_rates.csv`;
-  a2.click();
+  document.body.appendChild(a2);
+  setTimeout(() => {
+    a2.click();
+    document.body.removeChild(a2);
+  }, 100);
 }

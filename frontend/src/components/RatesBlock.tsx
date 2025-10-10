@@ -10,15 +10,15 @@ type Props = {
   rates: Rates;
 };
 
+const getCurrencyIcon = (code: string) => currencies.find(c => c.code === code)?.icon || null;
+
 export default function RatesBlock({ rates }: Props) {
   const [showAll, setShowAll] = useState(false);
 
-  // Основные валюты
   const mainCodes = ["RUB", "USD", "EUR", "BTC", "ETH", "LTC", "XMR"];
   const mainCurrencies = currencies.filter(c => mainCodes.includes(c.code));
   const otherCurrencies = currencies.filter(c => !mainCodes.includes(c.code));
 
-  // Форматирование курса с запятой
   const formatRate = (val?: number) =>
     val !== undefined
       ? val.toFixed(2).replace(".", ",")
@@ -26,15 +26,37 @@ export default function RatesBlock({ rates }: Props) {
 
   return (
     <Paper sx={{ p: 2, mb: 2 }}>
-      <Typography variant="h6">Курсы валют (к RUB)</Typography>
-      <Box display="flex" flexWrap="wrap" gap={2} mt={1}>
+      <Typography variant="h6" mb={2}>Курсы валют (к RUB)</Typography>
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(50px, 1fr))",
+          gap: 0.5,
+          alignItems: "center",
+          width: "100%",
+          maxWidth: "100%",
+        }}
+      >
         {mainCurrencies.map((cur, i) => (
-          <Box key={cur.code + i} sx={{ minWidth: 100, display: "flex", alignItems: "center", gap: 1 }}>
-            {cur.icon}
-            <Typography fontWeight={600}>{cur.code}:</Typography>
-            <Typography>
+          <Box key={cur.code + i} sx={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            p: "2px 1px",
+            borderRadius: "8px",
+            background: "#f8fafc",
+            fontWeight: 500,
+            fontSize: "0.8em",
+            border: "1px solid #e0e6ef",
+            minWidth: 45,
+            maxWidth: 60,
+            boxSizing: "border-box",
+          }}>
+            <span style={{ fontSize: 8, marginBottom: 1 }}>{getCurrencyIcon(cur.code)}</span>
+            <span style={{ fontSize: 9, color: "#888", marginBottom: 2 }}>{cur.code}</span>
+            <span style={{ fontWeight: 500, fontSize: 10 }}>
               {formatRate(rates[cur.code]?.RUB)}
-            </Typography>
+            </span>
           </Box>
         ))}
       </Box>
@@ -47,14 +69,36 @@ export default function RatesBlock({ rates }: Props) {
           bgcolor: "background.paper", p: 3, borderRadius: 2, minWidth: 320, maxWidth: 600, maxHeight: "80vh", overflowY: "auto"
         }}>
           <Typography variant="h6" mb={2}>Все курсы валют</Typography>
-          <Box display="flex" flexWrap="wrap" gap={2}>
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(50px, 1fr))",
+              gap: 0.5,
+              alignItems: "center",
+              width: "100%",
+              maxWidth: "100%",
+            }}
+          >
             {otherCurrencies.map((cur, i) => (
-              <Box key={cur.code + i} sx={{ minWidth: 100, display: "flex", alignItems: "center", gap: 1 }}>
-                {cur.icon}
-                <Typography fontWeight={600}>{cur.code}:</Typography>
-                <Typography>
+              <Box key={cur.code + i} sx={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                p: "2px 1px",
+                borderRadius: "8px",
+                background: "#f8fafc",
+                fontWeight: 500,
+                fontSize: "0.8em",
+                border: "1px solid #e0e6ef",
+                minWidth: 45,
+                maxWidth: 60,
+                boxSizing: "border-box",
+              }}>
+                <span style={{ fontSize: 8, marginBottom: 1 }}>{getCurrencyIcon(cur.code)}</span>
+                <span style={{ fontSize: 9, color: "#888", marginBottom: 2 }}>{cur.code}</span>
+                <span style={{ fontWeight: 500, fontSize: 10 }}>
                   {formatRate(rates[cur.code]?.RUB)}
-                </Typography>
+                </span>
               </Box>
             ))}
           </Box>

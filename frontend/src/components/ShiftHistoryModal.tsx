@@ -36,28 +36,29 @@ export default function ShiftHistoryModal({ open, onClose }: Props) {
               <Typography variant="subtitle1" mt={2} mb={1}>Балансы на конец смены:</Typography>
               <Box sx={{
                 display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))",
-                gap: 1,
+                gridTemplateColumns: "repeat(auto-fit, minmax(55px, 1fr))",
+                gap: 0.5,
                 alignItems: "center",
-                maxWidth: 400
+                maxWidth: 250
               }}>
                 {Object.entries(snap.balances).map(([code, value]) => (
                   <Box key={code} sx={{
                     display: "flex",
                     flexDirection: "column",
                     alignItems: "center",
-                    p: "6px 2px",
-                    borderRadius: "10px",
+                    p: "2px 1px",
+                    borderRadius: "8px",
                     background: "#f8fafc",
-                    fontWeight: 600,
-                    fontSize: "1em",
+                    fontWeight: 500,
+                    fontSize: "0.8em",
                     border: "1px solid #e0e6ef",
-                    minWidth: 90,
-                    maxWidth: 120
+                    minWidth: 45,
+                    maxWidth: 60,
+                    boxSizing: "border-box",
                   }}>
-                    <span style={{ fontSize: 16 }}>{getCurrencyIcon(code)}</span>
-                    <span style={{ fontSize: 13, color: "#888", marginBottom: 4 }}>{code}</span>
-                    <span style={{ fontWeight: 700, fontSize: 15 }}>
+                    <span style={{ fontSize: 8, marginBottom: 1 }}>{getCurrencyIcon(code)}</span>
+                    <span style={{ fontSize: 9, color: "#888", marginBottom: 2 }}>{code}</span>
+                    <span style={{ fontWeight: 500, fontSize: 10 }}>
                       {value === undefined || value === null
                         ? "-"
                         : typeof value === "number"
@@ -72,30 +73,31 @@ export default function ShiftHistoryModal({ open, onClose }: Props) {
               <Typography variant="subtitle1" mt={2} mb={1}>Курсы на конец смены:</Typography>
               <Box sx={{
                 display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))",
-                gap: 1,
+                gridTemplateColumns: "repeat(auto-fit, minmax(55px, 1fr))",
+                gap: 0.5,
                 alignItems: "center",
-                maxWidth: 400
+                maxWidth: 250
               }}>
                 {Object.entries(snap.rates).map(([code, val]: any) => (
                   <Box key={code} sx={{
                     display: "flex",
                     flexDirection: "column",
                     alignItems: "center",
-                    p: "6px 2px",
-                    borderRadius: "10px",
+                    p: "2px 1px",
+                    borderRadius: "8px",
                     background: "#f8fafc",
-                    fontWeight: 600,
-                    fontSize: "1em",
+                    fontWeight: 500,
+                    fontSize: "0.8em",
                     border: "1px solid #e0e6ef",
-                    minWidth: 90,
-                    maxWidth: 120
+                    minWidth: 45,
+                    maxWidth: 60,
+                    boxSizing: "border-box",
                   }}>
-                    <span style={{ fontSize: 16 }}>{getCurrencyIcon(code)}</span>
-                    <span style={{ fontSize: 13, color: "#888", marginBottom: 4 }}>{code}</span>
-                    <span style={{ fontWeight: 700, fontSize: 15 }}>
+                    <span style={{ fontSize: 8, marginBottom: 1 }}>{getCurrencyIcon(code)}</span>
+                    <span style={{ fontSize: 9, color: "#888", marginBottom: 2 }}>{code}</span>
+                    <span style={{ fontWeight: 500, fontSize: 10 }}>
                       {val.RUB !== undefined
-                        ? String(val.RUB).replace(".", ",")
+                        ? Number(val.RUB).toLocaleString("ru-RU", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).replace(".", ",")
                         : "-"}
                     </span>
                   </Box>
