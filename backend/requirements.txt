@@ -9,3 +9,4 @@ requests
 alembic
 python-multipart
 bcrypt==4.1.2
+# force rebuild
