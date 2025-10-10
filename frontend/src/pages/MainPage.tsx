@@ -41,7 +41,6 @@ export default function MainPage() {
     return saved ? Number(saved) : 1;
   });
   const [confirmShift, setConfirmShift] = useState(false);
-  const [fireMsg, setFireMsg] = useState("");
   const [firePage, setFirePage] = useState(1);
   const firePerPage = 5;
   const [showOnlyCurrentShift, setShowOnlyCurrentShift] = useState(false);
@@ -168,12 +167,11 @@ export default function MainPage() {
     }
   };
 
-  const handleAddFire = async () => {
-    if (!fireMsg.trim()) return;
+  const handleAddFire = async (msg: string) => {
+    if (!msg.trim()) return;
     try {
-      const msg = await createFireMessage(fireMsg);
-      setFire([msg, ...fire]);
-      setFireMsg("");
+      const newMsg = await createFireMessage(msg);
+      setFire([newMsg, ...fire]);
       toast.success("Сообщение добавлено!");
     } catch {
       toast.error("Ошибка при добавлении сообщения");
@@ -275,24 +273,132 @@ export default function MainPage() {
           >
             Переключить смену
           </Button>
-          <Button
-            variant="outlined"
-            color="warning"
-            onClick={() => setFireModalOpen(true)}
-            sx={{ fontWeight: 600, borderRadius: 2, ml: 2 }}
-          >
-            Информационная доска
-          </Button>
         </Box>
 
+        {/* FireModal после смены */}
+        <Button
+          variant="outlined"
+          color="warning"
+          onClick={() => setFireModalOpen(true)}
+          sx={{ fontWeight: 600, borderRadius: 2, mb: 2, alignSelf: "flex-start" }}
+        >
+          Информационная доска
+        </Button>
         <FireModal
           open={fireModalOpen}
           onClose={() => setFireModalOpen(false)}
           fire={fire}
-          isAdmin={user?.role === "admin"}
+          onAdd={handleAddFire}
+          onDelete={handleDeleteFire}
+          page={firePage}
+          setPage={setFirePage}
+          firePerPage={firePerPage}
         />
 
-        {/* Actions Bar */}
+        {/* Балансы */}
+        <Paper className="balances-block" sx={{
+          background: "#f8fafc", borderRadius: "14px", p: 2, mb: 2, boxShadow: "0 2px 16px #e0e6ef80", border: "1.5px solid #e0e6ef",
+          overflowX: "auto", maxWidth: "100%", minWidth: 0
+        }}>
+          <Typography variant="h6" sx={{ mb: 1 }}>Балансы</Typography>
+          <Box sx={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
+            gap: 1,
+            alignItems: "center",
+            width: "100%",
+            maxWidth: "100%",
+            overflowX: "auto"
+          }}>
+            {safeCurrencies
+              .sort((a, b) => a.code.localeCompare(b.code))
+              .map((cur, i) => (
+                <Box key={cur.code + i} sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1,
+                  minWidth: 90,
+                  maxWidth: 180,
+                  p: "4px 10px",
+                  borderRadius: "50px",
+                  background: "#f3f6fa",
+                  fontWeight: 600,
+                  fontSize: "1em",
+                  border: "1.5px solid #e0e6ef",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                  backgroundColor: selectedCurrencies.includes(cur.code) ? "#dbeafe" : "#f3f6fa"
+                }}
+                  onClick={() => {
+                    setSelectedCurrencies(selectedCurrencies.includes(cur.code)
+                      ? selectedCurrencies.filter(c => c !== cur.code)
+                      : [...selectedCurrencies, cur.code]);
+                  }}
+                >
+                  {cur.icon}
+                  <span>{cur.code}</span>
+                  <span style={{ marginLeft: 4, fontWeight: 400 }}>
+                    {balances[cur.code] !== undefined ? balances[cur.code] : 0}
+                  </span>
+                </Box>
+              ))}
+            <Button sx={{ ml: 2 }} variant="outlined" onClick={() => setSelectedCurrencies([])}>
+              Show all
+            </Button>
+          </Box>
+        </Paper>
+        {/* Курсы валют */}
+        <Paper className="rates-block" sx={{
+          background: "#fff", borderRadius: "14px", p: 2, mb: 2, boxShadow: "0 2px 16px #e0e6ef80", border: "1.5px solid #e0e6ef"
+        }}>
+          <Typography variant="h6" sx={{ mb: 1 }}>Курсы валют (к RUB)</Typography>
+          <Box className="rates-row" sx={{
+            display: "flex", flexWrap: "wrap", gap: 1, alignItems: "center", width: "100%"
+          }}>
+            {mainCurrencies.map((cur, i) => (
+              <Box key={cur.code + i} className="currency-cell" sx={{
+                display: "flex", alignItems: "center", gap: 1, minWidth: 90, p: "6px 12px", borderRadius: "50px",
+                background: "#f3f6fa", fontWeight: 600, fontSize: "1em", border: "1.5px solid #e0e6ef", m: "0 6px 0 0"
+              }}>
+                {cur.icon}
+                <span>{cur.code}</span>
+                <span style={{ marginLeft: 4, fontWeight: 400 }}>
+                  {rates[cur.code]?.RUB !== undefined ? rates[cur.code].RUB.toFixed(2) : "—"}
+                </span>
+              </Box>
+            ))}
+          </Box>
+          <Button sx={{ mt: 2 }} variant="outlined" onClick={() => setShowAllRates(true)}>
+            Показать все курсы
+          </Button>
+          <Modal open={showAllRates} onClose={() => setShowAllRates(false)}>
+            <Box className="modal-content" sx={{
+              position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)",
+              bgcolor: "#fff", p: 3, borderRadius: 2, minWidth: 320, maxWidth: 600, maxHeight: "80vh", overflowY: "auto", border: "2px solid #3b82f6"
+            }}>
+              <Typography variant="h6" mb={2}>Все курсы валют</Typography>
+              <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
+                {otherCurrencies.map((cur, i) => (
+                  <Box key={cur.code + i} className="currency-cell" sx={{
+                    display: "flex", alignItems: "center", gap: 1, minWidth: 90, p: "6px 12px", borderRadius: "50px",
+                    background: "#f3f6fa", fontWeight: 600, fontSize: "1em", border: "1.5px solid #e0e6ef", m: "0 6px 0 0"
+                  }}>
+                    {cur.icon}
+                    <span>{cur.code}</span>
+                    <span style={{ marginLeft: 4, fontWeight: 400 }}>
+                      {rates[cur.code]?.RUB !== undefined ? rates[cur.code].RUB.toFixed(2) : "—"}
+                    </span>
+                  </Box>
+                ))}
+              </Box>
+              <Button sx={{ mt: 2 }} variant="outlined" onClick={() => setShowAllRates(false)}>
+                Закрыть
+              </Button>
+            </Box>
+          </Modal>
+        </Paper>
+
+        {/* Actions Bar над историей операций */}
         <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2, flexWrap: "wrap" }}>
           <Button
             variant="contained"
@@ -350,110 +456,6 @@ export default function MainPage() {
             sx={{ width: 200 }}
           />
         </Box>
-         {/* Балансы */}
-        <Paper className="balances-block" sx={{
-          background: "#f8fafc", borderRadius: "14px", p: 2, mb: 2, boxShadow: "0 2px 16px #e0e6ef80", border: "1.5px solid #e0e6ef",
-          overflowX: "auto", maxWidth: "100%", minWidth: 0
-        }}>
-          <Typography variant="h6" sx={{ mb: 1 }}>Балансы</Typography>
-          <Box sx={{
-            display: "flex",
-            flexWrap: "wrap",
-            gap: 1,
-            alignItems: "center",
-            width: "100%",
-            maxWidth: "100%",
-            overflowX: "auto"
-          }}>
-            {safeCurrencies
-              .sort((a, b) => a.code.localeCompare(b.code))
-              .map((cur, i) => (
-                <Box key={cur.code + i} sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1,
-                  minWidth: 90,
-                  maxWidth: 120,
-                  p: "4px 10px",
-                  borderRadius: "50px",
-                  background: "#f3f6fa",
-                  fontWeight: 600,
-                  fontSize: "1em",
-                  border: "1.5px solid #e0e6ef",
-                  m: "0 6px 6px 0",
-                  justifyContent: "center",
-                  cursor: "pointer",
-                  backgroundColor: selectedCurrencies.includes(cur.code) ? "#dbeafe" : "#f3f6fa"
-                }}
-                  onClick={() => {
-                    setSelectedCurrencies(selectedCurrencies.includes(cur.code)
-                      ? selectedCurrencies.filter(c => c !== cur.code)
-                      : [...selectedCurrencies, cur.code]);
-                  }}
-                >
-                  {cur.icon}
-                  <span>{cur.code}</span>
-                  <span style={{ marginLeft: 4, fontWeight: 400 }}>
-                    {balances[cur.code] !== undefined ? balances[cur.code] : 0}
-                  </span>
-                </Box>
-              ))}
-            <Button sx={{ ml: 2 }} variant="outlined" onClick={() => setSelectedCurrencies([])}>
-              Show all
-            </Button>
-          </Box>
-        </Paper>
-
-        {/* Курсы валют */}
-        <Paper className="rates-block" sx={{
-          background: "#fff", borderRadius: "14px", p: 2, mb: 2, boxShadow: "0 2px 16px #e0e6ef80", border: "1.5px solid #e0e6ef"
-        }}>
-          <Typography variant="h6" sx={{ mb: 1 }}>Курсы валют (к RUB)</Typography>
-          <Box className="rates-row" sx={{
-            display: "flex", flexWrap: "wrap", gap: 1, alignItems: "center", width: "100%"
-          }}>
-            {mainCurrencies.map((cur, i) => (
-              <Box key={cur.code + i} className="currency-cell" sx={{
-                display: "flex", alignItems: "center", gap: 1, minWidth: 90, p: "6px 12px", borderRadius: "50px",
-                background: "#f3f6fa", fontWeight: 600, fontSize: "1em", border: "1.5px solid #e0e6ef", m: "0 6px 0 0"
-              }}>
-                {cur.icon}
-                <span>{cur.code}</span>
-                <span style={{ marginLeft: 4, fontWeight: 400 }}>
-                  {rates[cur.code]?.RUB !== undefined ? rates[cur.code].RUB.toFixed(2) : "—"}
-                </span>
-              </Box>
-            ))}
-          </Box>
-          <Button sx={{ mt: 2 }} variant="outlined" onClick={() => setShowAllRates(true)}>
-            Показать все курсы
-          </Button>
-          <Modal open={showAllRates} onClose={() => setShowAllRates(false)}>
-            <Box className="modal-content" sx={{
-              position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)",
-              bgcolor: "#fff", p: 3, borderRadius: 2, minWidth: 320, maxWidth: 600, maxHeight: "80vh", overflowY: "auto", border: "2px solid #3b82f6"
-            }}>
-              <Typography variant="h6" mb={2}>Все курсы валют</Typography>
-              <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
-                {otherCurrencies.map((cur, i) => (
-                  <Box key={cur.code + i} className="currency-cell" sx={{
-                    display: "flex", alignItems: "center", gap: 1, minWidth: 90, p: "6px 12px", borderRadius: "50px",
-                    background: "#f3f6fa", fontWeight: 600, fontSize: "1em", border: "1.5px solid #e0e6ef", m: "0 6px 0 0"
-                  }}>
-                    {cur.icon}
-                    <span>{cur.code}</span>
-                    <span style={{ marginLeft: 4, fontWeight: 400 }}>
-                      {rates[cur.code]?.RUB !== undefined ? rates[cur.code].RUB.toFixed(2) : "—"}
-                    </span>
-                  </Box>
-                ))}
-              </Box>
-              <Button sx={{ mt: 2 }} variant="outlined" onClick={() => setShowAllRates(false)}>
-                Закрыть
-              </Button>
-            </Box>
-          </Modal>
-        </Paper>
 
         {/* История операций */}
         <Paper className="history-block" sx={{
