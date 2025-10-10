@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, Dict, Any
 import datetime
 
 class UserBase(BaseModel):
@@ -32,6 +32,8 @@ class TransactionOut(TransactionBase):
     id: int
     author_id: int
     date: datetime.datetime
+    # Добавим автора как объект (если нужно)
+    author: Optional[UserOut] = None
 
     class Config:
         from_attributes = True
@@ -46,6 +48,24 @@ class FireMessageOut(FireMessageBase):
     id: int
     author_id: int
     date: datetime.datetime
+    author: Optional[UserOut] = None
+
+    class Config:
+        from_attributes = True
+
+# Для истории смен (ShiftSnapshot)
+class ShiftSnapshotBase(BaseModel):
+    shift_number: int
+    balances: Dict[str, Any]
+    rates: Dict[str, Any]
+
+class ShiftSnapshotCreate(ShiftSnapshotBase):
+    pass
+
+class ShiftSnapshotOut(ShiftSnapshotBase):
+    id: int
+    user_id: int
+    datetime: datetime.datetime
 
     class Config:
         from_attributes = True

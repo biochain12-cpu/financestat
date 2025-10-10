@@ -9,16 +9,14 @@ from typing import List, Optional
 from datetime import datetime
 import requests
 
-# --- Создание таблиц при запуске ---
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
-# --- CORS ---
 origins = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
-    "https://financestat-production-ce92.up.railway.app"  # <-- твой Railway frontend
+    "https://financestat-production-ce92.up.railway.app"
 ]
 
 app.add_middleware(
@@ -29,7 +27,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- Получение сессии базы данных ---
 def get_db():
     db = SessionLocal()
     try:
@@ -37,15 +34,12 @@ def get_db():
     finally:
         db.close()
 
-# --- OAuth2 схема ---
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
-# --- Главная страница ---
 @app.get("/")
 def read_root():
     return {"message": "Finance App backend работает!"}
 
-# --- Регистрация пользователя ---
 @app.post("/register", response_model=schemas.UserOut)
 def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
     db_user = db.query(models.User).filter(models.User.login == user.login).first()
@@ -63,7 +57,6 @@ def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
     db.refresh(db_user)
     return db_user
 
-# --- Логин (получение токена) ---
 @app.post("/token")
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.login == form_data.username).first()
@@ -72,7 +65,6 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
     access_token = create_access_token(data={"sub": user.login, "role": user.role, "user_id": user.id})
     return {"access_token": access_token, "token_type": "bearer"}
 
-# --- Получение текущего пользователя по токену ---
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     payload = decode_access_token(token)
     if not payload:
@@ -82,12 +74,10 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         raise HTTPException(status_code=401, detail="Пользователь не найден")
     return user
 
-# --- Получить свои данные ---
 @app.get("/me", response_model=schemas.UserOut)
 def read_users_me(current_user: models.User = Depends(get_current_user)):
     return current_user
 
-# --- CRUD для транзакций (операций) ---
 @app.post("/transactions", response_model=schemas.TransactionOut)
 def create_transaction(tx: schemas.TransactionCreate, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
     db_tx = models.Transaction(
@@ -134,14 +124,12 @@ def delete_transaction(tx_id: int, db: Session = Depends(get_db), current_user: 
     tx = db.query(models.Transaction).filter(models.Transaction.id == tx_id).first()
     if not tx:
         raise HTTPException(status_code=404, detail="Операция не найдена")
-    # Только автор или админ может удалить
     if tx.author_id != current_user.id and current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Нет прав на удаление")
     db.delete(tx)
     db.commit()
     return {"ok": True}
 
-# --- CRUD для сообщений "огонёк" ---
 @app.post("/fire", response_model=schemas.FireMessageOut)
 def create_fire_message(msg: schemas.FireMessageCreate, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
     db_msg = models.FireMessage(
@@ -169,7 +157,6 @@ def delete_fire_message(msg_id: int, db: Session = Depends(get_db), current_user
     db.commit()
     return {"ok": True}
 
-# --- Получить балансы ---
 @app.get("/balances")
 def get_balances(db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
     balances = {}
@@ -181,10 +168,8 @@ def get_balances(db: Session = Depends(get_db), current_user: models.User = Depe
             balances[tx.to_currency] = balances.get(tx.to_currency, 0) + (tx.to_amount or 0)
     return balances
 
-# --- Получить курсы валют ---
 @app.get("/rates")
 def get_rates():
-    # Получаем курсы с ЦБ РФ
     try:
         cbr = requests.get("https://www.cbr-xml-daily.ru/daily_json.js", timeout=5).json()
         usd_rub = float(cbr["Valute"]["USD"]["Value"])
@@ -195,7 +180,6 @@ def get_rates():
         eur_rub = 100.0
         cny_rub = 12.0
 
-    # Получаем курсы крипты с Bybit (spot)
     try:
         bybit = requests.get("https://api.bybit.com/v5/market/tickers?category=spot", timeout=5).json()
         bybit_list = bybit["result"]["list"]
@@ -221,7 +205,6 @@ def get_rates():
         btc_usdt = eth_usdt = ltc_usdt = bnb_usdt = xmr_usdt = sol_usdt = ton_usdt = trx_usdt = xrp_usdt = doge_usdt = ada_usdt = usdc_usdt = dai_usdt = 0
         usdt_usdt = 1.0
 
-    # Возвращаем курсы к RUB
     return {
         "RUB": {"RUB": 1},
         "USD": {"RUB": usd_rub},
@@ -242,3 +225,21 @@ def get_rates():
         "USDC": {"RUB": usdc_usdt * usd_rub},
         "DAI": {"RUB": dai_usdt * usd_rub},
     }
+
+# --- История смен (ShiftSnapshot) ---
+@app.post("/shift_snapshot", response_model=schemas.ShiftSnapshotOut)
+def create_shift_snapshot(snapshot: schemas.ShiftSnapshotCreate, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    db_snapshot = models.ShiftSnapshot(
+        shift_number=snapshot.shift_number,
+        user_id=current_user.id,
+        balances=snapshot.balances,
+        rates=snapshot.rates
+    )
+    db.add(db_snapshot)
+    db.commit()
+    db.refresh(db_snapshot)
+    return db_snapshot
+
+@app.get("/shift_snapshot", response_model=List[schemas.ShiftSnapshotOut])
+def get_shift_snapshots(db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    return db.query(models.ShiftSnapshot).filter(models.ShiftSnapshot.user_id == current_user.id).order_by(models.ShiftSnapshot.datetime.desc()).all()

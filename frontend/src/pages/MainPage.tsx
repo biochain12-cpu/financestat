@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { getMe, logout } from "../api/auth";
-import { getTransactions, deleteTransaction } from "../api/transactions";
+import { getTransactions, createTransaction, deleteTransaction } from "../api/transactions";
 import { getFireMessages, createFireMessage, deleteFireMessage } from "../api/fire";
 import { getBalances } from "../api/balances";
 import { getRates } from "../utils/getRates";
@@ -12,6 +12,8 @@ import { applyCustomRates } from "../utils/applyCustomRates";
 import AddTransactionModal from "../components/AddTransactionModal";
 import FilterModal from "../components/FilterModal";
 import CongratsModal from "../components/CongratsModal";
+import ShiftHistoryModal from "../components/ShiftHistoryModal";
+import { saveShiftSnapshot } from "../api/shiftSnapshot";
 import { exportShiftReport } from "../utils/exportShiftReport";
 import { FaPlus, FaFilter, FaFileExport, FaInfoCircle, FaTrash } from "react-icons/fa";
 
@@ -42,17 +44,12 @@ export default function MainPage() {
   const [firePage, setFirePage] = useState(1);
   const firePerPage = 5;
   const [showOnlyCurrentShift, setShowOnlyCurrentShift] = useState(false);
+  const [selectedCurrencies, setSelectedCurrencies] = useState<string[]>([]);
+  const [recordsPerPage, setRecordsPerPage] = useState(30);
+  const [page, setPage] = useState(1);
+  const [shiftHistoryOpen, setShiftHistoryOpen] = useState(false);
+  const [search, setSearch] = useState(""); // быстрый поиск
   const navigate = useNavigate();
-
-  // DEBUG LOG
-  console.log("MainPage рендерится", {
-    user,
-    loading,
-    transactions,
-    fire,
-    balances,
-    rates
-  });
 
   useEffect(() => {
     setLoading(true);
@@ -68,15 +65,31 @@ export default function MainPage() {
     ]).finally(() => setLoading(false));
   }, [navigate]);
 
-  const handleAddTransaction = (tx: any) => {
+  const handleAddTransaction = async (tx: any) => {
     tx.shift = currentShift;
-    setTransactions([tx, ...(Array.isArray(transactions) ? transactions : [])]);
-    getBalances().then(setBalances);
-    toast.success("Запись добавлена!");
+    try {
+      const savedTx = await createTransaction(tx);
+      setTransactions([savedTx, ...transactions]);
+      getBalances().then(setBalances);
+      toast.success("Запись добавлена!");
+    } catch (e) {
+      toast.error("Ошибка при добавлении записи");
+    }
   };
 
-  const handleFinishShift = () => setConfirmShift(true);
-  const handleConfirmFinish = () => {
+  const handleFinishShift = async () => setConfirmShift(true);
+
+  const handleConfirmFinish = async () => {
+    try {
+      await saveShiftSnapshot({
+        shift_number: currentShift,
+        balances,
+        rates,
+      });
+      toast.success("Снимок смены сохранён!");
+    } catch (e) {
+      toast.error("Ошибка при сохранении снимка смены");
+    }
     exportShiftReport({ transactions, shift: currentShift, rates });
     setConfirmShift(false);
     setCongratsOpen(true);
@@ -90,10 +103,32 @@ export default function MainPage() {
   const mainCurrencies = safeCurrencies.filter(c => mainCodes.includes(c.code)).sort((a, b) => a.code.localeCompare(b.code));
   const otherCurrencies = safeCurrencies.filter(c => !mainCodes.includes(c.code)).sort((a, b) => a.code.localeCompare(b.code));
 
-  const safeTransactions = Array.isArray(transactions) ? transactions : [];
-  const filteredTransactions = safeTransactions.filter(tx =>
+  const filteredByCurrency = selectedCurrencies.length
+    ? transactions.filter(tx =>
+        selectedCurrencies.includes(tx.from_currency) ||
+        selectedCurrencies.includes(tx.to_currency)
+      )
+    : transactions;
+
+  // Быстрый поиск
+  const filteredBySearch = search
+    ? filteredByCurrency.filter(tx => {
+        const s = search.toLowerCase();
+        return (
+          (tx.comment || "").toLowerCase().includes(s) ||
+          (tx.author?.login || tx.author?.name || tx.author || "").toLowerCase().includes(s) ||
+          (tx.from_currency || "").toLowerCase().includes(s) ||
+          (tx.to_currency || "").toLowerCase().includes(s)
+        );
+      })
+    : filteredByCurrency;
+
+  const filteredTransactions = (Array.isArray(filteredBySearch) ? filteredBySearch : []).filter(tx =>
     !showOnlyCurrentShift || tx.shift === currentShift
   );
+
+  const paginatedTransactions = filteredTransactions.slice((page - 1) * recordsPerPage, page * recordsPerPage);
+  const totalPages = Math.ceil(filteredTransactions.length / recordsPerPage);
 
   const safeFire = Array.isArray(fire) ? fire : [];
   const fireTotalPages = Math.max(1, Math.ceil(safeFire.length / firePerPage));
@@ -112,7 +147,7 @@ export default function MainPage() {
   const handleDelete = async (id: number) => {
     try {
       await deleteTransaction(id);
-      setTransactions(safeTransactions.filter(t => t.id !== id));
+      setTransactions(transactions.filter(t => t.id !== id));
       getBalances().then(setBalances);
       toast.success("Операция удалена");
     } catch (e: any) {
@@ -124,7 +159,7 @@ export default function MainPage() {
     if (!fireMsg.trim()) return;
     try {
       const msg = await createFireMessage(fireMsg);
-      setFire([msg, ...safeFire]);
+      setFire([msg, ...fire]);
       setFireMsg("");
       toast.success("Сообщение добавлено!");
     } catch {
@@ -135,7 +170,7 @@ export default function MainPage() {
   const handleDeleteFire = async (id: number) => {
     try {
       await deleteFireMessage(id);
-      setFire(safeFire.filter(f => f.id !== id));
+      setFire(fire.filter(f => f.id !== id));
       toast.success("Сообщение удалено");
     } catch {
       toast.error("Ошибка при удалении сообщения");
@@ -147,7 +182,8 @@ export default function MainPage() {
       localStorage.setItem("token", user.token);
     }
   }, [user]);
-   return (
+
+  return (
     <Box sx={{
       minHeight: "100vh",
       width: "100vw",
@@ -173,7 +209,6 @@ export default function MainPage() {
         border: "none",
         backdropFilter: "blur(1.5px)",
       }}>
-        {/* Top Bar */}
         <Box className="top-bar" sx={{
           display: "flex", alignItems: "center", justifyContent: "space-between", mb: 2, gap: 2
         }}>
@@ -196,10 +231,17 @@ export default function MainPage() {
             >
               Сменить пользователя
             </Button>
+            <Button
+              variant="outlined"
+              color="secondary"
+              onClick={() => setShiftHistoryOpen(true)}
+              sx={{ fontWeight: 600, borderRadius: 2 }}
+            >
+              История смен
+            </Button>
           </Box>
         </Box>
 
-        {/* Session Bar */}
         <Box className="session-bar" sx={{
           display: "flex", alignItems: "center", gap: 2, mb: 2
         }}>
@@ -221,63 +263,9 @@ export default function MainPage() {
           </Button>
         </Box>
 
-        {/* Кнопки действий */}
-        <Box className="center-actions" sx={{
-          display: "flex", justifyContent: "center", gap: 2, my: 3, flexWrap: "wrap"
-        }}>
-          <Button
-            variant="contained"
-            color="success"
-            startIcon={FaPlus({ size: 18 })}
-            onClick={() => setAddOpen(true)}
-            sx={{ minWidth: 120, fontWeight: 600, borderRadius: 2 }}
-          >
-            Добавить запись
-          </Button>
-          <Button
-            variant="outlined"
-            startIcon={FaFilter({ size: 18 })}
-            onClick={() => setFilterOpen(true)}
-            sx={{ minWidth: 120, fontWeight: 600, borderRadius: 2 }}
-          >
-            Фильтры истории
-          </Button>
-          <Button
-            variant="outlined"
-            color="primary"
-            startIcon={FaFileExport({ size: 18 })}
-            onClick={() => {
-              const lines = [
-                "ID,Мы получили,Мы отдали,Δ,Тип,Автор,Время,Смена,Комментарий",
-                ...transactions.map(tx =>
-                  [
-                    tx.id,
-                    `${tx.to_amount || ""} ${tx.to_currency || ""}`,
-                    `${tx.from_amount || ""} ${tx.from_currency || ""}`,
-                    calcRubDelta(tx).toFixed(2).replace(".", ","),
-                    tx.type,
-                    tx.author?.login || tx.author?.name || tx.author || "-",
-                    tx.date ? new Date(tx.date).toLocaleString("ru-RU") : "",
-                    tx.shift,
-                    tx.comment || ""
-                  ].join(",")
-                ),
-              ];
-              const blob = new Blob([lines.join("\n")], { type: "text/csv" });
-              const a = document.createElement("a");
-              a.href = URL.createObjectURL(blob);
-              a.download = "history.csv";
-              a.click();
-            }}
-            sx={{ minWidth: 120, fontWeight: 600, borderRadius: 2 }}
-          >
-            Экспорт в CSV
-          </Button>
-        </Box>
-
-        {/* Балансы */}
         <Paper className="balances-block" sx={{
-          background: "#f8fafc", borderRadius: "14px", p: 2, mb: 2, boxShadow: "0 2px 16px #e0e6ef80", border: "1.5px solid #e0e6ef"
+          background: "#f8fafc", borderRadius: "14px", p: 2, mb: 2, boxShadow: "0 2px 16px #e0e6ef80", border: "1.5px solid #e0e6ef",
+          overflowX: "auto", maxWidth: "100%", minWidth: 0
         }}>
           <Typography variant="h6" sx={{ mb: 1 }}>Балансы</Typography>
           <Box sx={{
@@ -285,7 +273,9 @@ export default function MainPage() {
             flexWrap: "wrap",
             gap: 1,
             alignItems: "center",
-            width: "100%"
+            width: "100%",
+            maxWidth: "100%",
+            overflowX: "auto"
           }}>
             {safeCurrencies
               .sort((a, b) => a.code.localeCompare(b.code))
@@ -303,8 +293,16 @@ export default function MainPage() {
                   fontSize: "1em",
                   border: "1.5px solid #e0e6ef",
                   m: "0 6px 6px 0",
-                  justifyContent: "center"
-                }}>
+                  justifyContent: "center",
+                  cursor: "pointer",
+                  backgroundColor: selectedCurrencies.includes(cur.code) ? "#dbeafe" : "#f3f6fa"
+                }}
+                  onClick={() => {
+                    setSelectedCurrencies(selectedCurrencies.includes(cur.code)
+                      ? selectedCurrencies.filter(c => c !== cur.code)
+                      : [...selectedCurrencies, cur.code]);
+                  }}
+                >
                   {cur.icon}
                   <span>{cur.code}</span>
                   <span style={{ marginLeft: 4, fontWeight: 400 }}>
@@ -312,10 +310,12 @@ export default function MainPage() {
                   </span>
                 </Box>
               ))}
+            <Button sx={{ ml: 2 }} variant="outlined" onClick={() => setSelectedCurrencies([])}>
+              Show all
+            </Button>
           </Box>
         </Paper>
 
-        {/* Курсы валют */}
         <Paper className="rates-block" sx={{
           background: "#fff", borderRadius: "14px", p: 2, mb: 2, boxShadow: "0 2px 16px #e0e6ef80", border: "1.5px solid #e0e6ef"
         }}>
@@ -366,13 +366,41 @@ export default function MainPage() {
           </Modal>
         </Paper>
 
-        {/* История операций */}
         <Paper className="history-block" sx={{
           background: "#fff", borderRadius: "14px", boxShadow: "0 2px 16px #e0e6ef80",
           border: "1.5px solid #e0e6ef", p: 3, mb: 2, minWidth: 0, overflowX: "auto"
         }}>
           <Typography variant="h6" sx={{ mb: 1 }}>История операций</Typography>
-          {filteredTransactions.length === 0 && <Typography color="text.secondary">Нет операций</Typography>}
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}>
+            <TextField
+              select
+              label="Показывать по"
+              value={recordsPerPage}
+              onChange={e => { setRecordsPerPage(Number(e.target.value)); setPage(1); }}
+              size="small"
+              sx={{ width: 120 }}
+              SelectProps={{ native: true }}
+            >
+              <option value={10}>10</option>
+              <option value={30}>30</option>
+              <option value={50}>50</option>
+              <option value={100}>100</option>
+            </TextField>
+            <Button
+              variant="outlined"
+              onClick={() => setShowOnlyCurrentShift(s => !s)}
+            >
+              {showOnlyCurrentShift ? "Показать все смены" : "Только текущая смена"}
+            </Button>
+            <TextField
+              label="Быстрый поиск"
+              value={search}
+              onChange={e => { setSearch(e.target.value); setPage(1); }}
+              size="small"
+              sx={{ width: 200 }}
+            />
+          </Box>
+          {paginatedTransactions.length === 0 && <Typography color="text.secondary">Нет операций</Typography>}
           <table id="historyTable" style={{ width: "100%", marginTop: 8, borderCollapse: "separate", borderSpacing: 0 }}>
             <thead>
               <tr>
@@ -388,7 +416,7 @@ export default function MainPage() {
               </tr>
             </thead>
             <tbody>
-              {filteredTransactions.map(tx => (
+              {paginatedTransactions.map(tx => (
                 <tr key={tx.id}>
                   <td style={{ background: "#e6f7ee", fontWeight: 600 }}>
                     {tx.type === "exchange" || tx.type === "adjustment" ? (
@@ -428,9 +456,20 @@ export default function MainPage() {
               ))}
             </tbody>
           </table>
+          <Box sx={{ display: "flex", justifyContent: "center", gap: 1, mt: 2 }}>
+            {Array.from({ length: totalPages }, (_, i) => (
+              <Button
+                key={i}
+                size="small"
+                variant={page === i + 1 ? "contained" : "outlined"}
+                onClick={() => setPage(i + 1)}
+              >
+                {i + 1}
+              </Button>
+            ))}
+          </Box>
         </Paper>
 
-        {/* Модальные окна */}
         <AddTransactionModal
           open={addOpen}
           onClose={() => setAddOpen(false)}
@@ -442,12 +481,15 @@ export default function MainPage() {
           onClose={() => setFilterOpen(false)}
           onFilter={params => {
             setFilterOpen(false);
+            if (params.search !== undefined) setSearch(params.search);
+            // остальные фильтры можно обработать тут
             toast.info("Фильтр применён");
           }}
         />
         <CongratsModal open={congratsOpen} onClose={() => setCongratsOpen(false)} />
 
-        {/* Модалка подтверждения завершения смены */}
+        <ShiftHistoryModal open={shiftHistoryOpen} onClose={() => setShiftHistoryOpen(false)} />
+
         <Modal open={confirmShift} onClose={() => setConfirmShift(false)}>
           <Box className="modal-content" sx={{
             position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)",

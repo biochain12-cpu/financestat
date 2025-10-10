@@ -13,16 +13,17 @@ export default function FilterModal({ open, onClose, onFilter }: Props) {
   const [comment, setComment] = useState("");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
+  const [search, setSearch] = useState(""); // Новый state для быстрого поиска
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Передаём даты в ISO-формате (YYYY-MM-DD)
     onFilter({
       shift: shift === "all" ? undefined : Number(shift),
       type: type === "all" ? undefined : type,
       comment: comment || undefined,
       from_date: from || undefined,
       to_date: to || undefined,
+      search: search || undefined, // Передаём быстрый поиск
     });
     onClose();
   };
@@ -33,6 +34,7 @@ export default function FilterModal({ open, onClose, onFilter }: Props) {
     setComment("");
     setFrom("");
     setTo("");
+    setSearch("");
     onFilter({});
     onClose();
   };
@@ -45,6 +47,12 @@ export default function FilterModal({ open, onClose, onFilter }: Props) {
       }}>
         <Typography variant="h6" mb={2}>Фильтры истории</Typography>
         <form onSubmit={handleSubmit}>
+          <TextField
+            label="Быстрый поиск (комментарий, автор, валюта)"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            fullWidth margin="normal"
+          />
           <TextField
             select label="Смена" value={shift} onChange={e => setShift(e.target.value)}
             fullWidth margin="normal"

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, JSON
 from sqlalchemy.orm import relationship
 from database import Base
 import datetime
@@ -32,3 +32,12 @@ class FireMessage(Base):
     author_id = Column(Integer, ForeignKey("users.id"))
     author = relationship("User")
     date = Column(DateTime, default=datetime.datetime.utcnow)
+
+class ShiftSnapshot(Base):
+    __tablename__ = "shift_snapshots"
+    id = Column(Integer, primary_key=True, index=True)
+    shift_number = Column(Integer, nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    datetime = Column(DateTime, default=datetime.datetime.utcnow)
+    balances = Column(JSON, nullable=False)
+    rates = Column(JSON, nullable=False)
