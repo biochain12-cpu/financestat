@@ -13,6 +13,7 @@ import AddTransactionModal from "../components/AddTransactionModal";
 import FilterModal from "../components/FilterModal";
 import CongratsModal from "../components/CongratsModal";
 import ShiftHistoryModal from "../components/ShiftHistoryModal";
+import FireModal from "../components/FireModal";
 import { saveShiftSnapshot } from "../api/shiftSnapshot";
 import { exportShiftReport } from "../utils/exportShiftReport";
 import { FaPlus, FaFilter, FaFileExport, FaInfoCircle, FaTrash } from "react-icons/fa";
@@ -48,6 +49,7 @@ export default function MainPage() {
   const [recordsPerPage, setRecordsPerPage] = useState(30);
   const [page, setPage] = useState(1);
   const [shiftHistoryOpen, setShiftHistoryOpen] = useState(false);
+  const [fireModalOpen, setFireModalOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState<any>({});
   const navigate = useNavigate();
@@ -111,7 +113,6 @@ export default function MainPage() {
       )
     : transactions;
 
-  // Быстрый поиск
   const filteredBySearch = search
     ? filteredByCurrency.filter(tx => {
         const s = search.toLowerCase();
@@ -124,7 +125,6 @@ export default function MainPage() {
       })
     : filteredByCurrency;
 
-  // Фильтрация по фильтрам из модалки
   const filteredByFilters = Object.keys(filters).length
     ? filteredBySearch.filter(tx => {
         if (filters.shift && tx.shift !== filters.shift) return false;
@@ -195,7 +195,7 @@ export default function MainPage() {
       localStorage.setItem("token", user.token);
     }
   }, [user]);
-    return (
+  return (
     <Box sx={{
       minHeight: "100vh",
       width: "100vw",
@@ -255,6 +255,43 @@ export default function MainPage() {
           </Box>
         </Box>
 
+        {/* Session Bar */}
+        <Box className="session-bar" sx={{
+          display: "flex", alignItems: "center", gap: 2, mb: 2
+        }}>
+          <Typography className="session-label" sx={{ color: "#6b7280", fontSize: "1.08em", mr: 1 }}>
+            Смена:
+          </Typography>
+          <Typography className="current-session" sx={{ fontWeight: 700, color: "#22c55e", ml: 2 }}>
+            <b>{currentShift}</b>
+          </Typography>
+          <Button
+            id="switchShiftBtn"
+            className="primary"
+            variant="contained"
+            color="success"
+            sx={{ ml: 2, borderRadius: 2 }}
+            onClick={handleFinishShift}
+          >
+            Переключить смену
+          </Button>
+          <Button
+            variant="outlined"
+            color="warning"
+            onClick={() => setFireModalOpen(true)}
+            sx={{ fontWeight: 600, borderRadius: 2, ml: 2 }}
+          >
+            Информационная доска
+          </Button>
+        </Box>
+
+        <FireModal
+          open={fireModalOpen}
+          onClose={() => setFireModalOpen(false)}
+          fire={fire}
+          isAdmin={user?.role === "admin"}
+        />
+
         {/* Actions Bar */}
         <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2, flexWrap: "wrap" }}>
           <Button
@@ -313,30 +350,7 @@ export default function MainPage() {
             sx={{ width: 200 }}
           />
         </Box>
-
-        {/* Session Bar */}
-        <Box className="session-bar" sx={{
-          display: "flex", alignItems: "center", gap: 2, mb: 2
-        }}>
-          <Typography className="session-label" sx={{ color: "#6b7280", fontSize: "1.08em", mr: 1 }}>
-            Смена:
-          </Typography>
-          <Typography className="current-session" sx={{ fontWeight: 700, color: "#22c55e", ml: 2 }}>
-            <b>{currentShift}</b>
-          </Typography>
-          <Button
-            id="switchShiftBtn"
-            className="primary"
-            variant="contained"
-            color="success"
-            sx={{ ml: 2, borderRadius: 2 }}
-            onClick={handleFinishShift}
-          >
-            Переключить смену
-          </Button>
-        </Box>
-
-        {/* Балансы */}
+         {/* Балансы */}
         <Paper className="balances-block" sx={{
           background: "#f8fafc", borderRadius: "14px", p: 2, mb: 2, boxShadow: "0 2px 16px #e0e6ef80", border: "1.5px solid #e0e6ef",
           overflowX: "auto", maxWidth: "100%", minWidth: 0
@@ -389,6 +403,8 @@ export default function MainPage() {
             </Button>
           </Box>
         </Paper>
+
+        {/* Курсы валют */}
         <Paper className="rates-block" sx={{
           background: "#fff", borderRadius: "14px", p: 2, mb: 2, boxShadow: "0 2px 16px #e0e6ef80", border: "1.5px solid #e0e6ef"
         }}>
@@ -439,6 +455,7 @@ export default function MainPage() {
           </Modal>
         </Paper>
 
+        {/* История операций */}
         <Paper className="history-block" sx={{
           background: "#fff", borderRadius: "14px", boxShadow: "0 2px 16px #e0e6ef80",
           border: "1.5px solid #e0e6ef", p: 3, mb: 2, minWidth: 0, overflowX: "auto"
@@ -573,6 +590,3 @@ export default function MainPage() {
     </Box>
   );
 }
-
-
-
