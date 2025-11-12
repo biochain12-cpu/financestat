@@ -10,6 +10,7 @@ class User(Base):
     hashed_password = Column(String, nullable=False)
     avatar_url = Column(String, nullable=True)
     role = Column(String, default="user")  # "user" или "admin"
+    shift = Column(Integer, default=1)     # <--- добавлено поле для хранения смены
 
 class Transaction(Base):
     __tablename__ = "transactions"

@@ -2,11 +2,11 @@ import { api } from "./backend";
 
 export async function getTransactions(params: any = {}) {
   const res = await api.get("/transactions", { params });
-  return res.data; // убери квадратные скобки!
+  return res.data; // убрал квадратные скобки
 }
 
 export async function createTransaction(data: any) {
-  const res = await api.post("/transactions", data); // убери квадратные скобки!
+  const res = await api.post("/transactions", data); // убрал квадратные скобки
   return res.data;
 }
 

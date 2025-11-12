@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, Body
 from sqlalchemy.orm import Session
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
@@ -244,3 +244,29 @@ def create_shift_snapshot(snapshot: schemas.ShiftSnapshotCreate, db: Session = D
 @app.get("/shift_snapshot", response_model=List[schemas.ShiftSnapshotOut])
 def get_shift_snapshots(db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
     return db.query(models.ShiftSnapshot).filter(models.ShiftSnapshot.user_id == current_user.id).order_by(models.ShiftSnapshot.datetime.desc()).all()
+
+# --- Синхронизация смены пользователя (shift) ---
+@app.get("/user/{user_id}/shift")
+def get_shift(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Пользователь не найден")
+    return {"shift": user.shift or 1}
+
+@app.post("/user/{user_id}/shift")
+def set_shift(
+    user_id: int,
+    data: dict = Body(...),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Пользователь не найден")
+    user.shift = data.get("shift", 1)
+    db.commit()
+    return {"shift": user.shift}

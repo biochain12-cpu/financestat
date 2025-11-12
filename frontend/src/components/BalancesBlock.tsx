@@ -19,13 +19,21 @@ export default function BalancesBlock({ balances, selectedCurrencies, setSelecte
     ? currencies.filter(cur => selectedCurrencies.includes(cur.code))
     : currencies;
 
+  const handleCurrencyClick = (code: string) => {
+    setSelectedCurrencies(
+      selectedCurrencies.includes(code)
+        ? selectedCurrencies.filter(c => c !== code)
+        : [...selectedCurrencies, code]
+    );
+  };
+
   return (
     <Paper sx={{ p: 2, mb: 2 }}>
       <Typography variant="h6" mb={2}>Балансы по валютам</Typography>
       <Box
         sx={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(45px, 1fr))",
+          gridTemplateColumns: "repeat(auto-fit, minmax(70px, 1fr))",
           gap: 0.5,
           alignItems: "center",
           width: "100%",
@@ -36,6 +44,7 @@ export default function BalancesBlock({ balances, selectedCurrencies, setSelecte
           .sort((a, b) => a.code.localeCompare(b.code))
           .map((cur, i) => {
             const value = balances[cur.code] ?? 0;
+            const isSelected = selectedCurrencies.includes(cur.code);
             return (
               <Box
                 key={cur.code + i}
@@ -45,23 +54,17 @@ export default function BalancesBlock({ balances, selectedCurrencies, setSelecte
                   alignItems: "center",
                   p: "2px 1px",
                   borderRadius: "8px",
-                  background: "#f8fafc",
+                  background: isSelected ? "#dbeafe" : "#f8fafc",
                   fontWeight: 500,
                   fontSize: "0.8em",
                   border: "1px solid #e0e6ef",
-                  minWidth: 40,
-                  maxWidth: 60,
+                  minWidth: 60,
+                  maxWidth: 80,
                   boxSizing: "border-box",
                   cursor: "pointer",
-                  backgroundColor: selectedCurrencies.includes(cur.code) ? "#dbeafe" : "#f8fafc"
+                  transition: "background 0.2s"
                 }}
-                onClick={() => {
-                  setSelectedCurrencies(
-                    selectedCurrencies.includes(cur.code)
-                      ? selectedCurrencies.filter(c => c !== cur.code)
-                      : [...selectedCurrencies, cur.code]
-                  );
-                }}
+                onClick={() => handleCurrencyClick(cur.code)}
               >
                 <span style={{ fontSize: 8, marginBottom: 1 }}>{getCurrencyIcon(cur.code)}</span>
                 <span style={{ fontSize: 9, color: "#888", marginBottom: 2 }}>{cur.code}</span>
@@ -73,6 +76,13 @@ export default function BalancesBlock({ balances, selectedCurrencies, setSelecte
                       })
                     : 0}
                 </span>
+                {/* Чекбокс для визуального удобства */}
+                <input
+                  type="checkbox"
+                  checked={isSelected}
+                  readOnly
+                  style={{ marginTop: 4, pointerEvents: "none" }}
+                />
               </Box>
             );
           })}

@@ -5,9 +5,10 @@ type Props = {
   transactions: any[];
   onDelete: (id: number) => void;
   user: any;
+  currentShift: number; // добавь этот пропс!
 };
 
-export default function HistoryTable({ transactions, onDelete, user }: Props) {
+export default function HistoryTable({ transactions, onDelete, user, currentShift }: Props) {
   return (
     <Paper sx={{ p: 2, mb: 2 }}>
       <Typography variant="h6">История операций</Typography>
@@ -29,7 +30,13 @@ export default function HistoryTable({ transactions, onDelete, user }: Props) {
           {transactions.map((tx) => (
             <tr key={tx.id}>
               <td>{tx.id}</td>
-              <td>{tx.type === "exchange" ? "Обмен" : tx.type === "adjustment" ? "Корректировка" : "Расход"}</td>
+              <td>
+                {tx.type === "exchange"
+                  ? "Обмен"
+                  : tx.type === "adjustment"
+                  ? "Корректировка"
+                  : "Расход"}
+              </td>
               <td>{tx.shift}</td>
               <td>{tx.comment || ""}</td>
               <td>
@@ -38,15 +45,16 @@ export default function HistoryTable({ transactions, onDelete, user }: Props) {
                   : ""}
               </td>
               <td>
-                {(user?.role === "admin" || tx.author_id === user?.id) && (
-                  <Button
-                    size="small"
-                    color="error"
-                    onClick={() => onDelete(tx.id)}
-                  >
-                    Удалить
-                  </Button>
-                )}
+                {(tx.shift === currentShift) && // только для текущей смены!
+                  (user?.role === "admin" || tx.author_id === user?.id) && (
+                    <Button
+                      size="small"
+                      color="error"
+                      onClick={() => onDelete(tx.id)}
+                    >
+                      Удалить
+                    </Button>
+                  )}
               </td>
             </tr>
           ))}

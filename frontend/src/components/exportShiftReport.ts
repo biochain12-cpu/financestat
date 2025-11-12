@@ -1,13 +1,17 @@
+import { currencies } from "../utils/currencies";
+
 export function exportShiftReport({
   transactions,
   shift,
   rates,
+  balances = {},
 }: {
   transactions: any[];
   shift: number;
   rates: { [currency: string]: { RUB: number } };
+  balances?: { [currency: string]: number };
 }) {
-  // 1. Прибыль по обменам
+  // 1. Прибыль по обменам (только за текущую смену)
   const profitTxs = transactions.filter(
     (tx) => tx.shift === shift && tx.type === "exchange"
   );
@@ -22,7 +26,7 @@ export function exportShiftReport({
     (tx) => (tx.comment || "").trim().toLowerCase().startsWith("id")
   ).length;
 
-  // 3. Расходы и корректировки
+  // 3. Расходы и корректировки (только за текущую смену)
   const expenses = transactions.filter(
     (tx) =>
       tx.shift === shift &&
@@ -45,12 +49,28 @@ export function exportShiftReport({
         const cur = e.from_currency || e.to_currency || "";
         const rub = (rates[cur]?.RUB || 0) * val;
         const sign = e.type === "expense" ? "-" : "+";
-        return `  ${sign} ${cur} ${val.toFixed(2).replace(".", ",")} (${rub.toFixed(2).replace(".", ",")} RUB)`;
+        // Если валюта не RUB, показываем RUB и исходную валюту в скобках
+        if (cur !== "RUB" && rates[cur]?.RUB) {
+          return `  ${sign} ${rub.toFixed(2).replace(".", ",")} RUB (≈${val.toFixed(2).replace(".", ",")} ${cur})`;
+        } else {
+          return `  ${sign} ${val.toFixed(2).replace(".", ",")} RUB`;
+        }
       })
       .join("\n");
   } else {
     txt += "  нет";
   }
+
+  // 4. Балансы на конец смены по всем валютам
+  txt += "\n\nБалансы на конец смены:\n";
+  const allCurrencyCodes = currencies
+    ? currencies.map(c => c.code)
+    : Object.keys(rates);
+
+  allCurrencyCodes.forEach(code => {
+    const value = balances[code] ?? 0;
+    txt += `  ${code}: ${value.toFixed(2).replace(".", ",")}\n`;
+  });
 
   // --- Скачка TXT-отчёта ---
   const blob = new Blob([txt], { type: "text/plain" });

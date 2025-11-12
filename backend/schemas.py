@@ -12,6 +12,7 @@ class UserCreate(UserBase):
 
 class UserOut(UserBase):
     id: int
+    shift: int  # <--- добавлено поле shift
 
     class Config:
         from_attributes = True  # Для Pydantic v2
