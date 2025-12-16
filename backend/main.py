@@ -16,7 +16,8 @@ app = FastAPI()
 origins = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
-    "https://financestat-production-ce92.up.railway.app"
+    "https://financestat-production-ce92.up.railway.app",  # frontend
+    "https://financestat-production.up.railway.app"         # backend
 ]
 
 app.add_middleware(
