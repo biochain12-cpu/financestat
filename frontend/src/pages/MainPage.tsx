@@ -116,9 +116,7 @@ export default function MainPage() {
   const mainCurrencies = safeCurrencies.filter(c => mainCodes.includes(c.code)).sort((a, b) => a.code.localeCompare(b.code));
   const otherCurrencies = safeCurrencies.filter(c => !mainCodes.includes(c.code)).sort((a, b) => a.code.localeCompare(b.code));
 
-  const displayedCurrencies = selectedCurrencies.length
-    ? safeCurrencies.filter(cur => selectedCurrencies.includes(cur.code))
-    : safeCurrencies;
+  const displayedCurrencies = safeCurrencies;
 
   const filteredByCurrency = selectedCurrencies.length
     ? transactions.filter(tx =>
