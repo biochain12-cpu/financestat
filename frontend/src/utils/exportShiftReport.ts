@@ -34,18 +34,18 @@ export function exportShiftReport({
 3. Расходы и корректировки:
 `;
 
-  if (expenses.length) {
-    txt += expenses
-      .map((e) => {
-        const val = e.from_amount || e.to_amount || 0;
-        const cur = e.from_currency || e.to_currency || "";
-        const rub = (rates[cur]?.USD || 0) * val;
-        return `  ${val} ${cur} (RUB ${rub.toFixed(2)})  — ${e.comment || ""}`;
-      })
-      .join("\n");
-  } else {
-    txt += "  нет";
-  }
+if (expenses.length) {
+  txt += expenses
+    .map((e) => {
+      const val = e.from_amount || e.to_amount || 0;
+      const cur = e.from_currency || e.to_currency || "";
+      const rub = (rates[cur]?.RUB || 0) * val;
+      return `  ${rub.toFixed(2)} RUB (${val} ${cur})  — ${e.comment || ""}`;
+    })
+    .join("\n");
+} else {
+  txt += "  нет";
+}
 
   // Скачка TXT
   const blob = new Blob([txt], { type: "text/plain" });
