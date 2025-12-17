@@ -1,4 +1,4 @@
-export function exportShiftReport({ transactions, shift, rates }: { transactions: any[]; shift: number; rates: any }) {
+export function exportShiftReport({ transactions, shift, rates }) {
   const profitTxs = transactions.filter(
     (tx) => tx.shift === shift && tx.type === "exchange"
   );
@@ -8,9 +8,8 @@ export function exportShiftReport({ transactions, shift, rates }: { transactions
     return sum + (toRub - fromRub);
   }, 0);
 
-  const exchangesWithId = profitTxs.filter(
-    (tx) => (tx.comment || "").trim().toLowerCase().startsWith("id")
-  ).length;
+  // Количество заявок — это количество profitTxs (обменов за смену)
+  const requestsCount = profitTxs.length;
 
   const expenses = transactions.filter(
     (tx) =>
@@ -22,7 +21,7 @@ export function exportShiftReport({ transactions, shift, rates }: { transactions
 Дата: ${new Date().toLocaleString()}
 
 1. Прибыль: ${(profit > 0 ? "+" : "") + profit.toFixed(2)} RUB
-2. Количество обменов с комментарием, начинающимся на "id": ${exchangesWithId}
+2. Количество заявок: ${requestsCount}
 
 3. Расходы и корректировки:
 `;
@@ -33,8 +32,7 @@ export function exportShiftReport({ transactions, shift, rates }: { transactions
         const val = e.from_amount || e.to_amount || 0;
         const cur = e.from_currency || e.to_currency || "";
         const rub = (rates[cur]?.RUB || 0) * val;
-        const sign = e.type === "expense" ? "-" : "+";
-        return `  ${sign} ${cur} ${val} (${rub.toFixed(2)} RUB) — ${e.comment || ""}`;
+        return `  ${rub.toFixed(2)} RUB (${val} ${cur}) — ${e.comment || ""}`;
       })
       .join("\n");
   } else {

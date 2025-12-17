@@ -15,9 +15,8 @@ type Props = {
 const getCurrencyIcon = (code: string) => currencies.find(c => c.code === code)?.icon || null;
 
 export default function BalancesBlock({ balances, selectedCurrencies, setSelectedCurrencies }: Props) {
-  const displayedCurrencies = selectedCurrencies.length
-    ? currencies.filter(cur => selectedCurrencies.includes(cur.code))
-    : currencies;
+  // ВСЕГДА показываем все валюты для выбора
+  const displayedCurrencies = currencies;
 
   const handleCurrencyClick = (code: string) => {
     setSelectedCurrencies(

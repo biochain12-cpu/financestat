@@ -41,32 +41,33 @@ export default function ShiftHistoryModal({ open, onClose }: Props) {
                 alignItems: "center",
                 maxWidth: 250
               }}>
-                {Object.entries(snap.balances).map(([code, value]) => (
-                  <Box key={code} sx={{
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    p: "2px 1px",
-                    borderRadius: "8px",
-                    background: "#f8fafc",
-                    fontWeight: 500,
-                    fontSize: "0.8em",
-                    border: "1px solid #e0e6ef",
-                    minWidth: 45,
-                    maxWidth: 60,
-                    boxSizing: "border-box",
-                  }}>
-                    <span style={{ fontSize: 8, marginBottom: 1 }}>{getCurrencyIcon(code)}</span>
-                    <span style={{ fontSize: 9, color: "#888", marginBottom: 2 }}>{code}</span>
-                    <span style={{ fontWeight: 500, fontSize: 10 }}>
-                      {value === undefined || value === null
-                        ? "-"
-                        : typeof value === "number"
+                {currencies.map(cur => {
+                  const value = snap.balances?.[cur.code] ?? 0;
+                  return (
+                    <Box key={cur.code} sx={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      p: "2px 1px",
+                      borderRadius: "8px",
+                      background: "#f8fafc",
+                      fontWeight: 500,
+                      fontSize: "0.8em",
+                      border: "1px solid #e0e6ef",
+                      minWidth: 45,
+                      maxWidth: 60,
+                      boxSizing: "border-box",
+                    }}>
+                      <span style={{ fontSize: 8, marginBottom: 1 }}>{getCurrencyIcon(cur.code)}</span>
+                      <span style={{ fontSize: 9, color: "#888", marginBottom: 2 }}>{cur.code}</span>
+                      <span style={{ fontWeight: 500, fontSize: 10 }}>
+                        {typeof value === "number"
                           ? value.toLocaleString("ru-RU", { maximumFractionDigits: 8 })
                           : String(value)}
-                    </span>
-                  </Box>
-                ))}
+                      </span>
+                    </Box>
+                  );
+                })}
               </Box>
             </Box>
             <Box sx={{ minWidth: 200, flex: 1 }}>
@@ -78,30 +79,33 @@ export default function ShiftHistoryModal({ open, onClose }: Props) {
                 alignItems: "center",
                 maxWidth: 250
               }}>
-                {Object.entries(snap.rates).map(([code, val]: any) => (
-                  <Box key={code} sx={{
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    p: "2px 1px",
-                    borderRadius: "8px",
-                    background: "#f8fafc",
-                    fontWeight: 500,
-                    fontSize: "0.8em",
-                    border: "1px solid #e0e6ef",
-                    minWidth: 45,
-                    maxWidth: 60,
-                    boxSizing: "border-box",
-                  }}>
-                    <span style={{ fontSize: 8, marginBottom: 1 }}>{getCurrencyIcon(code)}</span>
-                    <span style={{ fontSize: 9, color: "#888", marginBottom: 2 }}>{code}</span>
-                    <span style={{ fontWeight: 500, fontSize: 10 }}>
-                      {val.RUB !== undefined
-                        ? Number(val.RUB).toLocaleString("ru-RU", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).replace(".", ",")
-                        : "-"}
-                    </span>
-                  </Box>
-                ))}
+                {currencies.map(cur => {
+                  const val = snap.rates?.[cur.code];
+                  return (
+                    <Box key={cur.code} sx={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      p: "2px 1px",
+                      borderRadius: "8px",
+                      background: "#f8fafc",
+                      fontWeight: 500,
+                      fontSize: "0.8em",
+                      border: "1px solid #e0e6ef",
+                      minWidth: 45,
+                      maxWidth: 60,
+                      boxSizing: "border-box",
+                    }}>
+                      <span style={{ fontSize: 8, marginBottom: 1 }}>{getCurrencyIcon(cur.code)}</span>
+                      <span style={{ fontSize: 9, color: "#888", marginBottom: 2 }}>{cur.code}</span>
+                      <span style={{ fontWeight: 500, fontSize: 10 }}>
+                        {val && val.RUB !== undefined
+                          ? Number(val.RUB).toLocaleString("ru-RU", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).replace(".", ",")
+                          : "-"}
+                      </span>
+                    </Box>
+                  );
+                })}
               </Box>
             </Box>
           </Box>
