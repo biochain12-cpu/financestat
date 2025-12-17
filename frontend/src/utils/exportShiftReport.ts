@@ -34,18 +34,21 @@ export function exportShiftReport({
 3. Расходы и корректировки:
 `;
 
-if (expenses.length) {
-  txt += expenses
-    .map((e) => {
-      const val = e.from_amount || e.to_amount || 0;
-      const cur = e.from_currency || e.to_currency || "";
-      const rub = (rates[cur]?.RUB || 0) * val;
-      return `${rub.toFixed(2)} RUB (${val} ${cur}) — ${e.comment || ""}`;
-    })
-    .join("\n");
-} else {
-  txt += "нет";
-}
+  if (expenses.length) {
+    txt += expenses
+      .map((e) => {
+        // Определяем валюту: если from_currency не RUB, берем её, иначе to_currency
+        let cur = e.from_currency && e.from_currency !== "RUB"
+          ? e.from_currency
+          : (e.to_currency && e.to_currency !== "RUB" ? e.to_currency : e.from_currency || e.to_currency || "");
+        const val = e.from_amount || e.to_amount || 0;
+        const rub = (rates[cur]?.RUB || 0) * val;
+        return `${rub.toFixed(2)} RUB (${val} ${cur}) — ${e.comment || ""}`;
+      })
+      .join("\n");
+  } else {
+    txt += "нет";
+  }
 
   // Скачка TXT
   const blob = new Blob([txt], { type: "text/plain" });
@@ -53,4 +56,4 @@ if (expenses.length) {
   a.href = URL.createObjectURL(blob);
   a.download = `shift_${shift}_report.txt`;
   a.click();
-} // <-- вот эта скобка закрывает функцию
+}
