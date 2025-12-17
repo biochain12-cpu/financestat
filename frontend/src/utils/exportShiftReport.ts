@@ -40,11 +40,11 @@ if (expenses.length) {
       const val = e.from_amount || e.to_amount || 0;
       const cur = e.from_currency || e.to_currency || "";
       const rub = (rates[cur]?.RUB || 0) * val;
-      return `  ${rub.toFixed(2)} RUB (${val} ${cur})  — ${e.comment || ""}`;
+      return `${rub.toFixed(2)} RUB (${val} ${cur}) — ${e.comment || ""}`;
     })
     .join("\n");
 } else {
-  txt += "  нет";
+  txt += "нет";
 }
 
   // Скачка TXT
