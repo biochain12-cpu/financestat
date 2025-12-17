@@ -6,7 +6,8 @@ import { toast } from "react-toastify";
 export default function LoginPage() {
   const navigate = useNavigate();
 
-  const handleLogin = async (e) => {
+  const handleLogin = async (e: React.FormEvent) => {
+
     e.preventDefault();
     // Здесь можно добавить имитацию успешного входа
     toast.success("Вход без авторизации!");
