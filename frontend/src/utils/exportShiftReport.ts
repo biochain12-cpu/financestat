@@ -31,7 +31,7 @@ export function exportShiftReport({ transactions, shift, rates }) {
       .map((e) => {
         const val = e.from_amount || e.to_amount || 0;
         const cur = e.from_currency || e.to_currency || "";
-        const rub = (rates[cur]?.USD || 0) * val;
+        const rub = (rates[cur]?.CNY || 0) * val;
         return `  ${val} ${cur} (RUB ${rub.toFixed(2)})  — ${e.comment || ""}`;
       })
       .join("\n");
